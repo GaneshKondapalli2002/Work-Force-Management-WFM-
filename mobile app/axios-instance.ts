@@ -3,7 +3,7 @@
 
   // Create an Axios instance
   const instance: AxiosInstance = axios.create({
-    baseURL: 'http://192.168.106.5:5000/api',
+    baseURL: 'http://192.168.29.184:5000/api',
     timeout: 10000,
   });
 

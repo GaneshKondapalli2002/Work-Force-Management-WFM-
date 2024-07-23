@@ -43,6 +43,8 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
   const slideAnim = useState(new Animated.Value(-300))[0];
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState('open');
+  const [checkoutInputs, setCheckoutInputs] = useState<{ [key: string]: string }>({});
+  const [isTemplate, setIsTemplate] = useState(false);
 
   useEffect(() => {
     const fetchJobPosts = async () => {
@@ -54,6 +56,7 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
         const openJobs = allJobs.filter((job: JobPost) => job.status === 'open');
         const completedJobs = allJobs.filter((job: JobPost) => job.status === 'completed');
         const upcomingJobs = allJobs.filter((job: JobPost) => job.status === 'upcoming');
+        const checkedInJobs = allJobs.filter((job: JobPost) => job.status === 'checkedIn');
 
         // Set job posts and filtered job posts based on activeSection
         setJobPosts(allJobs);
@@ -67,6 +70,9 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
             break;
           case 'upcoming':
             setFilteredJobPosts(upcomingJobs);
+            break;
+          case 'checkedIn':
+            setFilteredJobPosts(checkedInJobs);
             break;
           default:
             setFilteredJobPosts(openJobs); // Default to open jobs
@@ -110,6 +116,14 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
     }
   };
 
+  const sendNotification = async (userId: string, message: string) => {
+    try {
+      await instance.post('/notifications', { userId, message });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
+  };
+
   const acceptJob = async (jobId: string) => {
     try {
       const response = await instance.put(`/jobPosts/accept/${jobId}`);
@@ -128,6 +142,12 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
         setFilteredJobPosts(openJobs);
 
         Alert.alert('Success', 'Job accepted successfully!');
+
+        // Send notification to the assigned user
+        const acceptedJob = jobPosts.find((job) => job._id === jobId);
+        if (acceptedJob && acceptedJob.assignedTo) {
+          sendNotification(acceptedJob.assignedTo, 'You have been assigned a new job.');
+        }
       } else {
         throw new Error('Failed to accept job');
       }
@@ -178,6 +198,13 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
     }
   };
 
+  const handleCheckoutInput = (jobId: string, text: string) => {
+    setCheckoutInputs((prevInputs) => ({
+      ...prevInputs,
+      [jobId]: text,
+    }));
+  };
+
   const logout = async () => {
     try {
       await AsyncStorage.removeItem('token');
@@ -213,90 +240,116 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
     } else if (shift.toLowerCase() === 'night') {
       return <FontAwesome name="moon-o" size={20} color="#0000ff" />;
     } else {
-      return null; // Or return a default icon
+      return null;// return <ShapesIcon name="square" size={20} color="#ffa500" />;
     }
   };
 
   return (
     <View style={styles.container}>
       <ShapesIcon shapes={require('../assets/shapes.png')} />
-
       <View style={styles.content}>
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBox}>
+      
+      
+      <View style={styles.searchContainer}>
+
+
+ <View style={styles.searchBox}>
             <FontAwesome name="search" size={20} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search..."
-              value={searchQuery}
-              onChangeText={handleSearch}
-            />
-          </View>
-          <TouchableOpacity style={styles.menuIcon} onPress={toggleModal}>
+          
+ <TextInput
+          style={styles.searchInput}
+          placeholder="Search by job description"
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+      </View>
+      <TouchableOpacity style={styles.menuIcon} onPress={toggleModal}>
             <FontAwesome name="bars" size={24} color="black" />
           </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.scrollContainer}>
-          <View style={styles.sectionsContainer}>
-            <TouchableOpacity
-              style={[styles.section, activeSection === 'open' && styles.activeSection]}
-              onPress={() => handleSectionPress('open')}
-            >
-              <Text style={[styles.sectionText, activeSection === 'open' && styles.activeSectionText]}>Open</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.section, activeSection === 'completed' && styles.activeSection]}
-              onPress={() => handleSectionPress('completed')}
-            >
-              <Text style={[styles.sectionText, activeSection === 'completed' && styles.activeSectionText]}>Completed</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.section, activeSection === 'upcoming' && styles.activeSection]}
-              onPress={() => handleSectionPress('upcoming')}
-            >
-              <Text style={[styles.sectionText, activeSection === 'upcoming' && styles.activeSectionText]}>Upcoming</Text>
-            </TouchableOpacity>
           </View>
-
-          {filteredJobPosts.map((post) => (
-            <View key={post._id} style={styles.card}>
-              <Text style={styles.cardTitle}> {post.JobDescription}</Text>    
-              <Text style={styles.cardText}><Icon name="calendar" size={18} style={styles.icon} /> {post.Date}</Text>
-              <Text style={styles.cardText}>{getShiftIcon(post.Shift)} {post.Shift}</Text>
-              <Text style={styles.cardText}><Icon name="map-marker" size={18} style={styles.icon} /> {post.Location}</Text>
-              <Text style={styles.infoText}><Icon name="clock-o" size={18} style={styles.icon}/> {post.Starttime} - {post.Endtime}</Text>
-              <Text style={styles.cardText}><Icon name="dollar" size={18} style={styles.icon} /> {post.Payment}</Text>
-              {activeSection === 'open' && (
-                <TouchableOpacity
-                  style={styles.acceptButton}
-                  onPress={() => acceptJob(post._id)}
-                >
-                  <Text style={styles.acceptButtonText}>Accept Job</Text>
-                </TouchableOpacity>
-              )}
-              {activeSection === 'upcoming' && !post.checkedIn && (
-                <TouchableOpacity
-                  style={styles.acceptButton}
-                  onPress={() => checkInJob(post._id)}
-                >
-                  <Text style={styles.acceptButtonText}>Check In</Text>
-                </TouchableOpacity>
-              )}
-              {activeSection === 'upcoming' && post.checkedIn && !post.checkedOut && (
-                <TouchableOpacity
-                  style={styles.acceptButton}
-                  onPress={() => checkOutJob(post._id)}
-                >
-                  <Text style={styles.acceptButtonText}>Check Out</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-        </ScrollView>
+      
+      <View style={styles.sectionContainer}>
+        <TouchableOpacity
+          style={[styles.sectionButton, activeSection === 'open' && styles.activeSectionButton]}
+          onPress={() => handleSectionPress('open')}
+        >
+          <Text style={styles.sectionButtonText}>Open</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sectionButton, activeSection === 'completed' && styles.activeSectionButton]}
+          onPress={() => handleSectionPress('completed')}
+        >
+          <Text style={styles.sectionButtonText}>Completed</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sectionButton, activeSection === 'upcoming' && styles.activeSectionButton]}
+          onPress={() => handleSectionPress('upcoming')}
+        >
+          <Text style={styles.sectionButtonText}>Upcoming</Text>
+        </TouchableOpacity>
+        
+        
       </View>
-
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+      <ScrollView style={styles.jobList}>
+        {filteredJobPosts.map((jobPost) => (
+          <View key={jobPost._id} style={styles.jobPost}>
+            <Text style={styles.jobTitle}>{jobPost.JobDescription}</Text>
+             <Text style={styles.cardText}><Icon name="calendar" size={18} style={styles.icon} /> {jobPost.Date}</Text>
+            <Text style={styles.jobDetails}>{jobPost.Shift}
+              {getShiftIcon(jobPost.Shift)} 
+            </Text>
+            <Text style={styles.cardText}><Icon name="map-marker" size={18} style={styles.icon} /> {jobPost.Location}</Text>
+              <Text style={styles.infoText}><Icon name="clock-o" size={18} style={styles.icon}/> {jobPost.Starttime} - {jobPost.Endtime}</Text>
+              <Text style={styles.cardText}><Icon name="dollar" size={18} style={styles.icon} /> {jobPost.Payment}</Text>
+            {jobPost.status === 'checkedIn' && (
+              <View style={styles.checkedInContainer}>
+                <View style={styles.checkboxContainer}>
+                  <TouchableOpacity
+                    style={styles.checkbox}
+                    onPress={() => setIsTemplate(!isTemplate)}
+                  >
+                    <Text style={styles.checkboxText}>{isTemplate ? '✓' : ''}</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.checkboxText}>Complete Feedback</Text>
+                </View>
+                <TextInput
+                  style={styles.feedbackInput}
+                  placeholder="Enter feedback here"
+                  onChangeText={(text) => handleCheckoutInput(jobPost._id, text)}
+                />
+              </View>
+            )}
+            <View style={styles.buttonsContainer}>
+              {jobPost.status === 'open' && (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => acceptJob(jobPost._id)}
+                >
+                  <Text style={styles.buttonText}>Accept</Text>
+                </TouchableOpacity>
+              )}
+              {jobPost.status === 'upcoming' && !jobPost.checkedIn && (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => checkInJob(jobPost._id)}
+                >
+                  <Text style={styles.buttonText}>Check In</Text>
+                </TouchableOpacity>
+              )}
+              {/* {jobPost.status === 'checkedIn' && !jobPost.checkedOut && (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => checkOutJob(jobPost._id)}
+                >
+                  <Text style={styles.buttonText}>Check Out</Text>
+                </TouchableOpacity>
+              )} */}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+      
+       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <Animated.View style={[styles.modalContainer, { transform: [{ translateY: slideAnim }] }]}>
           <TouchableOpacity style={styles.modalItem} onPress={() => navigation.navigate('UserProfile')}>
             <Text style={styles.modalItemText}>User Profile</Text>
@@ -312,9 +365,11 @@ const HomeScreen: React.FC<DashboardProps> = ({ navigation }) => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.modalCloseButton} onPress={toggleModal}>
             <Text style={styles.modalCloseButtonText}>Close</Text>
-          </TouchableOpacity>
-        </Animated.View>
+            </TouchableOpacity>
+          </Animated.View>
+        
       </Modal>
+    </View>
     </View>
   );
 };
@@ -328,14 +383,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
-    infoText: {
+  logoutButton: {
+    backgroundColor: '#ff0000',
+    padding: 10,
+    borderRadius: 5,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  searchContainer: {
+flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,  },
+  searchInput: {
     flex: 1,
-    marginLeft: 5,
   },
   searchBox: {
     flexDirection: 'row',
@@ -348,50 +414,8 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 10,
   },
-    icon: {
-    marginRight: 5,
-  },
-  searchInput: {
-    flex: 1,
-  },
   menuIcon: {
     marginLeft: 15,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  cardText: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  acceptButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  acceptButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   modalContainer: {
     backgroundColor: '#fff',
@@ -414,6 +438,26 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontSize: 18,
   },
+  sectionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
+  sectionButton: {
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: '#ddd',
+  },
+  activeSectionButton: {
+    backgroundColor: '#007bff',
+  },
+  sectionButtonText: {
+    fontSize: 16,
+    color: '#000',
+  },
+  jobList: {
+    flex: 1,
+  },
   modalCloseButton: {
     backgroundColor: '#E0E0E0',
     borderRadius: 10,
@@ -426,25 +470,133 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  sectionsContainer: {
+  jobPost: {
+    backgroundColor: '#fff',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  jobTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  jobDetails: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 10,
+  },
+   cardText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  infoText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  checkedInContainer: {
+    marginBottom: 10,
+  },
+  checkboxContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 5,
   },
-  section: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    backgroundColor: '#E0E0E0',
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderColor: '#007bff',
+    borderWidth: 1,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
-  activeSection: {
-    backgroundColor: '#4CAF50',
+  checkboxText: {
+    fontSize: 18,
+    color: '#007bff',
   },
-  sectionText: {
+  feedbackInput: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  submitButton: {
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#fff',
     fontSize: 16,
   },
-  activeSectionText: {
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  buttonText: {
     color: '#fff',
+    fontSize: 16,
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    backgroundColor: '#007bff',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  closeButton: {
+    backgroundColor: '#ff0000',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+   icon: {
+    marginRight: 5,
   },
 });
 
