@@ -6,6 +6,7 @@ import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { usePushNotifications } from './Notification';
 import * as Notifications from 'expo-notifications';
 import { Picker } from '@react-native-picker/picker';
+import Signature from './SignatureScreen';
 
 interface JobPost {
   _id: string;

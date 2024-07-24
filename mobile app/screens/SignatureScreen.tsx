@@ -1,51 +1,58 @@
-// import React, { useRef } from 'react';
-// import { View, StyleSheet, Button } from 'react-native';
-// import Signature, { SignatureViewRef } from 'react-native-signature-canvas';
+import React, { useRef, useImperativeHandle } from 'react';
+import { StyleSheet, View, Alert } from 'react-native';
+import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
+import { NavigationProp } from '@react-navigation/native';
 
-// const SignatureScreen: React.FC = () => {
-//   const ref = useRef<SignatureViewRef>(null);
+interface SignatureProps {
+  navigation: NavigationProp<any, any>;
+}
 
-//   const handleSignature = (signature: string) => {
-//     console.log(signature);
-//   };
+const Signature = React.forwardRef<SignatureViewRef, SignatureProps>(({ navigation }, ref) => {
+  const localRef = useRef<SignatureViewRef>(null);
 
-//   const handleClear = () => {
-//     ref.current?.clearSignature();
-//   };
+  useImperativeHandle(ref, () => localRef.current as SignatureViewRef);
 
-//   const handleConfirm = () => {
-//     ref.current?.readSignature();
-//   };
+  const handleSignature = (signature: string) => {
+    console.log(signature);
+    // Process the signature here (e.g., save it to state, upload to server, etc.)
+    Alert.alert("Signature Captured", "Your signature has been saved successfully.");
+    navigation.goBack(); // Navigate back after capturing the signature
+  };
 
-//   return (
-//     <View style={styles.container}>
-//       <Signature
-//         ref={ref}
-//         onOK={handleSignature}
-//         descriptionText="Sign"
-//         clearText="Clear"
-//         confirmText="Save"
-//         webStyle={signaturePadStyle}
-//       />
-//       <Button title="Clear" onPress={handleClear} />
-//       <Button title="Save" onPress={handleConfirm} />
-//     </View>
-//   );
-// };
+  const handleEmpty = () => {
+    Alert.alert("No Signature", "Please provide a signature.");
+  };
 
-// const signaturePadStyle = `
-//   .m-signature-pad--footer {
-//     display: none;
-//     margin: 0px;
-//   }
-// `;
+  const webStyle = `
+    .m-signature-pad--footer {
+      display: none;
+      margin: 0px;
+    }
+    .m-signature-pad {
+      box-shadow: none;
+      border: none;
+    }
+  `;
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-// });
+  return (
+    <View style={styles.container}>
+      <SignatureScreen
+        ref={localRef}
+        onOK={handleSignature}
+        onEmpty={handleEmpty}
+        descriptionText="Sign"
+        clearText="Clear"
+        confirmText="Save"
+        webStyle={webStyle}
+      />
+    </View>
+  );
+});
 
-// export default SignatureScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
+
+export default Signature;
