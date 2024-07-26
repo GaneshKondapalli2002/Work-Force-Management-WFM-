@@ -1,15 +1,8 @@
 const mongoose = require('mongoose');
 
-// Validator function to check if TemplateName is required
-const templateNameValidator = function() {
-  if (this.isTemplate && !this.TemplateName) {
-    return false;
-  }
-  return true;
-};
-
 const jobPostSchema = new mongoose.Schema({
-  Date: { type: Date, required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  Date: { type: String, required: true },
   Shift: { type: String, required: true },
   Location: { type: String, required: true },
   Starttime: { type: String, required: true },
@@ -18,19 +11,17 @@ const jobPostSchema = new mongoose.Schema({
   Payment: { type: String, required: true },
   TemplateName: { type: String },
   isTemplate: { type: Boolean, default: false },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  status: {
-    type: String,
-    enum: ['open', 'assigned', 'upcoming', 'checkedIn', 'completed'],
-    default: 'open',
-  },
-  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  checkInTime: { type: Date },
-  checkOutTime: { type: Date },
+  status: { type: String, enum: ['open', 'assigned', 'upcoming', 'checkedIn', 'completed'], default: 'open' },
+  checkedInTime: { type: Date },
+  checkedOutTime: { type: Date },
+signature: { type: String, required: false, },
+  checkoutInput: { type: String }, // Additional input for checkout
 }, { timestamps: true });
 
-// Apply the custom validator
-jobPostSchema.path('TemplateName').validate(templateNameValidator, 'Template name is required when saving as a template');
+
+
+module.exports = mongoose.model('JobPost', jobPostSchema);
+
 jobPostSchema.index({ Date: 1 }, { unique: false });
 
 const JobPost = mongoose.model('JobPost', jobPostSchema);

@@ -4,7 +4,8 @@
     "strict": true,
     "baseUrl": "./",
     "paths": {
-      "*": ["node_modules/*"]
+      "*": ["node_modules/*"],
+       "typeRoots": ["./src/types", "./node_modules/@types"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"]  

@@ -3,12 +3,31 @@ const admin = require('firebase-admin');
 const router = express.Router();
 const JobPost = require('../models/jobpost');
 const auth = require('../middleware/auth');
+const PDFDocument = require('pdfkit');
+const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
+const User = require('../models/user');
+
+// Nodemailer setup for sending email
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 const serviceAccount = require('../config/serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+const tempDir = path.join(__dirname, '../temp');
+
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir, { recursive: true });
+}
 // POST /api/jobPosts - Create a new job post
 router.post('/', auth, async (req, res) => {
   const { Date, Shift, Location, Starttime, Endtime, JobDescription, Payment, TemplateName, isTemplate } = req.body;
@@ -171,35 +190,247 @@ router.put('/checkIn/:id', auth, async (req, res) => {
   }
 });
 
-// PUT /api/jobPosts/checkOut/:id - Check out from a job
-// PUT /api/jobPosts/checkOut/:id - Check out from a job
-router.put('/checkOut/:id', auth, async (req, res) => {
+
+// // routes/jobpost.js
+// router.put('/checkout/:id', auth, async (req, res) => {
+//   const { id } = req.params;
+//   const { signature, checkoutInput } = req.body;
+
+//   try {
+//     // Fetch the job post by ID
+//     console.log('Fetching job post with ID:', id); // Debugging line
+//     const jobPost = await JobPost.findById(id);
+    
+//     // Log the retrieved job post
+//     console.log('Retrieved job post:', jobPost); // Debugging line
+
+//     if (!jobPost) {
+//       return res.status(404).json({ msg: 'Job post not found' });
+//     }
+
+//     // Update job post with checkout details
+//     jobPost.status = 'completed';
+//     jobPost.checkedOut = true;
+//     jobPost.signature = signature; // Save the base64 signature
+//     jobPost.checkoutInput = checkoutInput;
+
+//     await jobPost.save();
+
+//     // Create a PDF document
+//     const doc = new PDFDocument();
+//     const filePath = path.join(__dirname, '../temp', `JobCheckout_${id}.pdf`);
+
+//     doc.pipe(fs.createWriteStream(filePath));
+
+//     doc.fontSize(12).text(`Job Checkout Details`, { underline: true });
+//     doc.moveDown();
+
+//     // Debugging: Log jobPost details
+//     console.log('JobPost details for PDF:', {
+//       id: jobPost._id,
+//       user: req.user.name,
+//       date: jobPost.date,
+//       shift: jobPost.shift,
+//       location: jobPost.location,
+//       jobDescription: jobPost.jobDescription,
+//       checkoutInput: jobPost.checkoutInput
+//     });
+
+//     doc.text(`Job ID: ${jobPost._id || 'Not available'}`);
+//     doc.text(`User: ${req.user.name || 'Not available'}`);
+//     doc.text(`Date: ${jobPost.date ? jobPost.date.toDateString() : 'Not available'}`);
+//     doc.text(`Shift: ${jobPost.shift || 'Not available'}`);
+//     doc.text(`Location: ${jobPost.location || 'Not available'}`);
+//     doc.text(`Job Description: ${jobPost.jobDescription || 'Not available'}`);
+//     doc.text(`Checkout Input: ${jobPost.checkoutInput || 'Not available'}`);
+//     doc.text(`Signature:`, { continued: true });
+
+//     // Add the signature to the PDF if available
+//     if (signature) {
+//       try {
+//         const base64Data = signature.replace(/^data:image\/\w+;base64,/, '');
+//         const signatureBuffer = Buffer.from(base64Data, 'base64');
+//         const imageFormat = signature.match(/^data:image\/(\w+);base64,/);
+
+//         if (imageFormat) {
+//           const format = imageFormat[1];
+//           const tempImagePath = path.join(__dirname, '../temp', `temp_signature.${format}`);
+//           fs.writeFileSync(tempImagePath, signatureBuffer);
+//           doc.image(tempImagePath, { width: 200, height: 50 });
+//           fs.unlinkSync(tempImagePath);
+//         } else {
+//           doc.text('Invalid image format.');
+//         }
+//       } catch (error) {
+//         console.error('Error processing signature image:', error.message);
+//         doc.text('Signature image could not be added.');
+//       }
+//     } else {
+//       doc.text('No signature provided.');
+//     }
+
+//     doc.end();
+
+//     // Retrieve admin user email and send email with PDF attachment
+//     const adminUser = await User.findOne({ role: 'admin' });
+//     if (!adminUser) {
+//       // Clean up the file before responding with an error
+//       fs.unlinkSync(filePath);
+//       return res.status(500).json({ message: 'Admin user not found' });
+//     }
+
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: adminUser.email, // Use admin user's email
+//       subject: 'Job Checkout Completed',
+//       text: `The job with ID ${jobPost._id} has been completed by ${req.user.name}. Please find the checkout details attached.`,
+//       attachments: [
+//         {
+//           filename: `JobCheckout_${id}.pdf`,
+//           path: filePath,
+//         },
+//       ],
+//     };
+
+//     transporter.sendMail(mailOptions, (error, info) => {
+//       if (error) {
+//         console.error('Error sending email:', error);
+//         // Clean up the file if email fails to send
+//         fs.unlinkSync(filePath);
+//         if (!res.headersSent) {
+//           return res.status(500).json({ message: 'Failed to send email' });
+//         }
+//       } else {
+//         console.log('Email sent:', info.response);
+//         // Optionally delete the temporary file after sending the email
+//         fs.unlinkSync(filePath);
+
+//         // Send response only after email has been sent
+//         if (!res.headersSent) {
+//           return res.json(jobPost);
+//         }
+//       }
+//     });
+//   } catch (err) {
+//     console.error('Error checking out job:', err.message);
+//     if (!res.headersSent) {
+//       return res.status(500).send('Server Error');
+//     }
+//   }
+// });
+
+// routes/jobpost.js
+router.put('/checkout/:id', async (req, res) => {
+  const { id } = req.params;
+  const { signature, checkoutInput } = req.body;
+
   try {
-    const { id } = req.params;
-    const job = await JobPost.findById(id);
-
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found' });
+    // Fetch the job post by ID
+    const jobPost = await JobPost.findById(id);
+    if (!jobPost) {
+      return res.status(404).json({ msg: 'Job post not found' });
     }
 
-    if (job.status !== 'checkedIn') {
-      return res.status(400).json({ message: 'Job not checked in' });
+    // Update job post with checkout details
+    jobPost.status = 'completed';
+    jobPost.checkedOut = true;
+    jobPost.signature = signature; // Save the base64 signature
+    jobPost.checkoutInput = checkoutInput;
+
+    await jobPost.save();
+
+    // Create a PDF document
+    const doc = new PDFDocument();
+    const filePath = path.join(__dirname, '../temp', `JobCheckout_${id}.pdf`);
+
+    doc.pipe(fs.createWriteStream(filePath));
+
+    doc.fontSize(12).text(`Job Checkout Details`, { underline: true });
+    doc.moveDown();
+    doc.text(`Job ID: ${jobPost._id}`);
+    doc.text(`User: ${req.user.name}`);
+    doc.text(`Date: ${jobPost.Date}`);
+    doc.text(`Shift: ${jobPost.Shift}`);
+    doc.text(`Location: ${jobPost.Location}`);
+    doc.text(`Job Description: ${jobPost.JobDescription}`);
+    doc.text(`Checkout Input: ${jobPost.checkoutInput}`);
+    doc.text(`Signature:`, { continued: true });
+
+    // Add the signature to the PDF if available
+    if (signature) {
+      try {
+        const base64Data = signature.replace(/^data:image\/\w+;base64,/, '');
+        const signatureBuffer = Buffer.from(base64Data, 'base64');
+        const imageFormat = signature.match(/^data:image\/(\w+);base64,/);
+
+        if (imageFormat) {
+          const format = imageFormat[1];
+          const tempImagePath = path.join(__dirname, '../temp', `temp_signature.${format}`);
+          fs.writeFileSync(tempImagePath, signatureBuffer);
+          doc.image(tempImagePath, { width: 200, height: 50 });
+          fs.unlinkSync(tempImagePath);
+        } else {
+          doc.text('Invalid image format.');
+        }
+      } catch (error) {
+        console.error('Error processing signature image:', error.message);
+        doc.text('Signature image could not be added.');
+      }
+    } else {
+      doc.text('No signature provided.');
     }
 
-    // Update job status to 'completed' and store check-out time
-    job.status = 'completed';
-    job.checkOutTime = new Date();
+    doc.end();
 
-    // Save updated job
-    await job.save();
+    
+    // Retrieve admin user email and send email with PDF attachment
+    const adminUser = await User.findOne({ role: 'admin' });
+    if (!adminUser) {
+      // Clean up the file before responding with an error
+      fs.unlinkSync(filePath);
+      return res.status(500).json({ message: 'Admin user not found' });
+    }
 
-    // Return updated job object
-    res.json(job);
-  } catch (error) {
-    console.error('Error checking out job:', error.message);
-    res.status(500).json({ message: 'Server error' });
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: adminUser.email, // Use admin user's email
+      subject: 'Job Checkout Completed',
+      text: `The job with ID ${jobPost._id} has been completed . Please find the checkout details attached.`,
+      attachments: [
+        {
+          filename: `JobCheckout_${id}.pdf`,
+          path: filePath,
+        },
+      ],
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+        // Clean up the file if email fails to send
+        fs.unlinkSync(filePath);
+        if (!res.headersSent) {
+          return res.status(500).json({ message: 'Failed to send email' });
+        }
+      } else {
+        console.log('Email sent:', info.response);
+        // Optionally delete the temporary file after sending the email
+        fs.unlinkSync(filePath);
+
+        // Send response only after email has been sent
+        if (!res.headersSent) {
+          return res.json(jobPost);
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Error checking out job:', err.message);
+    if (!res.headersSent) {
+      return res.status(500).send('Server Error');
+    }
   }
 });
+
 
 
 // GET /api/jobPosts/template/:templateName - Fetch a specific job post by TemplateName
@@ -244,16 +475,16 @@ router.get('/job-dates-statuses', async (req, res) => {
 });
 
 
-// GET /api/jobPosts/date/:date - Fetch job posts for a specific date
 router.get('/date/:date', async (req, res) => {
-  const { date } = req.params;
-
   try {
-    const jobPosts = await JobPost.find({ Date: new Date(date) });
-    res.json(jobPosts);
-  } catch (err) {
-    console.error('Error fetching job posts by date:', err.message);
-    res.status(500).send('Server Error');
+    const date = req.params.date;
+    console.log('Fetching jobs for date:', date); // Log the date parameter
+    const jobs = await JobPost.find({ Date: date }); // Query the database
+    console.log('Jobs found:', jobs); // Log the result
+    res.json(jobs);
+  } catch (error) {
+    console.error('Error fetching jobs:', error);
+    res.status(500).send('Server error');
   }
 });
 
