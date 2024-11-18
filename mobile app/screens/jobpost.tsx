@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, Platform, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, Platform, TouchableOpacity, ScrollView, } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import instance from '../axios-instance';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
@@ -116,7 +116,12 @@ const JobPostForm: React.FC<DashboardProps> = ({ navigation }) => {
       setEndtime(selectedTime.toLocaleTimeString());
     }
   };
-
+//   const validateJobPostData = (data:any) => {
+//   if (!data.Shift || !data.Date ) {
+//     throw new Error('Missing required fields');
+//   }
+//   // Additional validation logic as needed
+// };
   const handleSubmit = async () => {
     try {
       const response = await instance.post('/jobPosts', {
@@ -150,13 +155,53 @@ const JobPostForm: React.FC<DashboardProps> = ({ navigation }) => {
       Alert.alert('Error', 'Failed to create job post');
     }
   };
+const SAVE = async () => {
+  try {
+    const response = await instance.post('/jobPosts', {
+      Shift,
+      Date: date.toISOString().split('T')[0],
+      Location,
+      Starttime,
+      Endtime,
+      JobDescription,
+      Payment,
+      status: 'draft',
+      isTemplate,
+      TemplateName,
+    });
+    
+    Alert.alert('Success', 'Job post saved as draft successfully');
+    console.log('Job draft saved:', response.data);
+
+    clearForm();
+  } catch (error: any) {
+    console.error('Error saving job draft:', error.response ? error.response.data : error.message);
+    Alert.alert('Error', 'Failed to save job draft');
+  }
+};
 
   return (
     <ScrollView contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
       <View style={styles.container}>
         <View style={styles.dashboard}>
           <Text style={styles.heading}>Job Post</Text>
-
+      
+        
+           <Picker
+            selectedValue={selectedTemplate}
+            style={styles.input}
+            onValueChange={(itemValue) => {
+              setSelectedTemplate(itemValue as string);
+              handleTemplateSelect(itemValue as string);
+            }}
+          >
+            <Picker.Item label="Select a template" value="" />
+            {templates.map((template) => (
+              <Picker.Item key={template._id} label={template.TemplateName} value={template._id} />
+            ))}
+          </Picker> 
+         
+         
           <Text style={styles.label}>Shift</Text>
           <View style={styles.pickerContainer}>
             <Picker
@@ -242,20 +287,7 @@ const JobPostForm: React.FC<DashboardProps> = ({ navigation }) => {
             placeholder="Enter Payment"
           />
 
-          <Text style={styles.label}>Select Template</Text>
-          <Picker
-            selectedValue={selectedTemplate}
-            style={styles.input}
-            onValueChange={(itemValue) => {
-              setSelectedTemplate(itemValue as string);
-              handleTemplateSelect(itemValue as string);
-            }}
-          >
-            <Picker.Item label="Select a template" value="" />
-            {templates.map((template) => (
-              <Picker.Item key={template._id} label={template.TemplateName} value={template._id} />
-            ))}
-          </Picker>
+          
 
           {isTemplate && (
             <>
@@ -279,8 +311,9 @@ const JobPostForm: React.FC<DashboardProps> = ({ navigation }) => {
             </TouchableOpacity>
             <Text style={styles.checkboxLabel}>Save as Template</Text>
           </View>
-
+              <Button  title="SAVE" onPress={SAVE} />
           <Button title="Submit" onPress={handleSubmit} />
+        
         </View>
       </View>
     </ScrollView>
@@ -308,6 +341,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
+  },
+  button:{
+    padding: 15,
   },
   input: {
     height: 40,

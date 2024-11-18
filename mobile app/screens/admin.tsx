@@ -298,3 +298,87 @@ const styles = StyleSheet.create({
 });
 
 export default AdminDashboard;
+
+
+
+
+
+
+
+
+
+// import React, { useEffect, useState } from 'react';
+// import { View, Text, TouchableOpacity } from 'react-native';
+// import Voice from '@react-native-voice/voice';
+
+// const AdminDashboard = () => {
+
+//   const [started, setStarted] =useState('')
+//   const [ended, setEnded] = useState('')
+//   const [results, setResults] = useState([])
+
+//   useEffect(() => {
+//         Voice.onSpeechStart =onSpeechStart ;
+//         Voice.onSpeechEnd = onSpeechEnd;
+//         Voice.onSpeechResults = onSpeechResults;
+
+//         return ()=>{
+//           Voice.destroy().then(Voice.removeAllListeners)
+//         }
+//   },[])
+
+
+//   const onSpeechStart =(e:any) =>{
+//     console.log(e)
+//     setStarted('@')
+//   }
+
+//   const onSpeechEnd =(e:any) =>{
+//     console.log(e)
+//     setEnded('*')
+//   }
+
+//   const onSpeechResults = (e:any) =>{
+//     console.log(e)
+//     setResults(e.value)
+//   }
+
+//   const startSpeech=async ()=>{
+//     try{
+//       await Voice.start('en-US');
+//       setStarted('')
+//       setEnded('')
+//       setResults([])
+//     }catch(e:any){
+//       console.log(e);
+//     }
+//   }
+// const stopSpeech=async ()=>{
+//   try{
+//       await Voice.stop();
+//       await Voice.destroy();
+//        setStarted('')
+//       setEnded('')
+//       setResults([])
+//     }catch(e:any){
+//       console.log(e);
+//     }
+// }
+//   return (
+//     <View >
+//       <Text style={{color:'black', alignSelf:'center',marginTop:20}}>Voice to text</Text>
+//     <TouchableOpacity style={{alignSelf:'center', marginTop:50}} onPress={()=>{startSpeech()}}>
+//       <Text>speak</Text>
+//     </TouchableOpacity>
+//     <View style={{flexDirection: 'row', marginTop:50}}>
+//       <Text>Started{started}</Text>
+//       <Text>Ended{ended}</Text>
+//     </View>
+//     <TouchableOpacity style={{width:'100%',height:60, justifyContent:'center', backgroundColor:'black'}} onPress={()=>{stopSpeech()}}>
+//     <Text style={{color:'White'}}>Stop listening</Text>
+//     </TouchableOpacity>
+//     </View>
+//   );
+// };
+
+// export default AdminDashboard;

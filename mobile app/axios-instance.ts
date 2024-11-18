@@ -136,5 +136,13 @@ export const saveTemplate = async (template: JobPost): Promise<JobPost> => {
     throw error;
   }
 };
-
+export const fetchNotificationsFromAPI = async (): Promise<any[]> => {
+  try {
+    const response = await instance.get('/notifications');
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to fetch notifications:', error.message || error);
+    return [];
+  }
+};
 export default instance;

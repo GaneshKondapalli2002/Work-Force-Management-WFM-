@@ -19,7 +19,7 @@ import Admin from './screens/admin';
 import open from './screens/open';
 import Notificationscreen from './screens/notificationscreen';
 import Calendar  from './screens/calendar';
-// import sign from './screens/SignatureScreen';
+import { NotificationProvider } from './screens/NotificationContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +40,7 @@ const App = () => {
   }
 
   return (
+    <NotificationProvider>
     <NavigationContainer>
       
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -57,9 +58,9 @@ const App = () => {
         <Stack.Screen name="open" component={open} />
         <Stack.Screen name="Notificationscreen" component={Notificationscreen} />
         <Stack.Screen name="Calendar" component={Calendar} />
-        {/* <Stack.Screen name="sign" component={sign} /> */}
       </Stack.Navigator>
     </NavigationContainer>
+    </NotificationProvider>
   );
 };
 

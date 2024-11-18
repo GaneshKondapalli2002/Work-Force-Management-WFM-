@@ -27,7 +27,7 @@ const handleLogin = async () => {
     if (user && user.role) {
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('role', user.role);
-
+      // await AsyncStorage.setItem('userId', user._id);
       // Navigate based on user role
       if (user.role === 'admin') {
         navigation.navigate('Admin'); // Replace with your admin screen name
