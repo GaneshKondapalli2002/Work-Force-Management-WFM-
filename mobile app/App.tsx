@@ -20,7 +20,8 @@ import open from './screens/open';
 import Notificationscreen from './screens/notificationscreen';
 import Calendar  from './screens/calendar';
 import { NotificationProvider } from './screens/NotificationContext';
-
+import speech from './screens/speech';
+import MessagingScreen from './screens/message';
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -58,6 +59,7 @@ const App = () => {
         <Stack.Screen name="open" component={open} />
         <Stack.Screen name="Notificationscreen" component={Notificationscreen} />
         <Stack.Screen name="Calendar" component={Calendar} />
+      <Stack.Screen name="speech" component={speech} />
       </Stack.Navigator>
     </NavigationContainer>
     </NotificationProvider>

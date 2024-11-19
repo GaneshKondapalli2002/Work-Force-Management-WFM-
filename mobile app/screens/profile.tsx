@@ -1,143 +1,133 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import axiosInstance from '../axios-instance';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ShapesIcon from '../components/ShapesIcon';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { ParamListBase, useNavigation } from '@react-navigation/native';
 
 const Profile = () => {
-  const [profileData, setProfileData] = useState({
-    _id: '',
-    name: '',
-    email: '',
-    profile: {
-      address: '',
-      city: '',
-      pincode: '',
-      phone: '',
-      qualifications: '',
-      skills: '',
-      idOptions: '',
-    },
-  });
-  const [loading, setLoading] = useState(false);
-  const [editMode, setEditMode] = useState(false); // Flag for edit mode
-  const [message, setMessage] = useState('');
+  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [phone, setPhone] = useState('');
+  const [qualifications, setQualifications] = useState('');
+  const [skills, setSkills] = useState('');
+  const [idOptions, setIdOptions] = useState('');
 
   useEffect(() => {
-    fetchProfileData();
+    const loadProfile = async () => {
+      const storedName = await AsyncStorage.getItem('userName');
+      const storedEmail = await AsyncStorage.getItem('userEmail');
+      const storedAddress = await AsyncStorage.getItem('userAddress');
+      const storedCity = await AsyncStorage.getItem('userCity');
+      const storedPincode = await AsyncStorage.getItem('userPincode');
+      const storedPhone = await AsyncStorage.getItem('userPhone');
+      const storedQualifications = await AsyncStorage.getItem('userQualifications');
+      const storedSkills = await AsyncStorage.getItem('userSkills');
+      const storedIdOptions = await AsyncStorage.getItem('userIdOptions');
+
+      setName(storedName || '');
+      setEmail(storedEmail || '');
+      setAddress(storedAddress || '');
+      setCity(storedCity || '');
+      setPincode(storedPincode || '');
+      setPhone(storedPhone || '');
+      setQualifications(storedQualifications || '');
+      setSkills(storedSkills || '');
+      setIdOptions(storedIdOptions || '');
+    };
+
+    loadProfile();
   }, []);
 
-  const fetchProfileData = async () => {
-    setLoading(true);
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        setMessage('Error fetching profile. Token is missing.');
-        setLoading(false);
-        return;
-      }
-      const response = await axiosInstance.get('/profile/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      setProfileData(response.data);
-    } catch (error: any) {
-      console.error('Error fetching profile:', error.message);
-      setMessage('Error fetching profile. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const saveProfile = async () => {
+    await AsyncStorage.setItem('userName', name);
+    await AsyncStorage.setItem('userEmail', email);
+    await AsyncStorage.setItem('userAddress', address);
+    await AsyncStorage.setItem('userCity', city);
+    await AsyncStorage.setItem('userPincode', pincode);
+    await AsyncStorage.setItem('userPhone', phone);
+    await AsyncStorage.setItem('userQualifications', qualifications);
+    await AsyncStorage.setItem('userSkills', skills);
+    await AsyncStorage.setItem('userIdOptions', idOptions);
+    alert('Profile saved');
   };
-
-  const handleSaveProfile = async () => {
-    setLoading(true);
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        setMessage('Error updating profile. Token is missing.');
-        setLoading(false);
-        return;
-      }
-      const response = await axiosInstance.put('/profile/me', profileData.profile, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      setProfileData(response.data);
-      setEditMode(false); // Exit edit mode after successful update
-      setMessage('Profile updated successfully.');
-    } catch (error: any) {
-      console.error('Error updating profile:', error.message);
-      setMessage('Error updating profile. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (key: string, value: string) => {
-    setProfileData({
-      ...profileData,
-      profile: {
-        ...profileData.profile,
-        [key]: value,
-      },
-    });
-  };
-
-  if (loading) {
-    return <ActivityIndicator size="large" color="#69DCCE" style={styles.loadingIndicator} />;
-  }
 
   return (
-    <View style={styles.container}>
-      <ShapesIcon shapes={require('../assets/shapes.png')} />
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Profile</Text>
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
-          value={profileData.name}
-          onChangeText={(value) => handleInputChange('name', value)}
-          editable={editMode}
-        />
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          value={profileData.email}
-          onChangeText={(value) => handleInputChange('email', value)}
-          editable={editMode}
-        />
-        <Text style={styles.label}>Address</Text>
-        <TextInput
-          style={styles.input}
-          value={profileData.profile.address}
-          onChangeText={(value) => handleInputChange('address', value)}
-          editable={editMode}
-        />
-        {/* Add other profile fields here */}
-      </View>
-      {!editMode ? (
-        <Pressable style={styles.button} onPress={() => setEditMode(true)}>
-          <Text style={styles.buttonText}>Edit Profile</Text>
-        </Pressable>
-      ) : (
-        <Pressable style={styles.button} onPress={handleSaveProfile} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Text style={styles.buttonText}>Save Profile</Text>
-          )}
-        </Pressable>
-      )}
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-    </View>
+      <Text style={styles.label}>Name:</Text>
+      <TextInput
+        style={styles.input}
+        value={name}
+        onChangeText={setName}
+      />
+      <Text style={styles.label}>Email:</Text>
+      <TextInput
+        style={styles.input}
+        value={email}
+        onChangeText={setEmail}
+      />
+      <Text style={styles.label}>Address:</Text>
+      <TextInput
+        style={styles.input}
+        value={address}
+        onChangeText={setAddress}
+      />
+      <Text style={styles.label}>City:</Text>
+      <TextInput
+        style={styles.input}
+        value={city}
+        onChangeText={setCity}
+      />
+      <Text style={styles.label}>Pincode:</Text>
+      <TextInput
+        style={styles.input}
+        value={pincode}
+        onChangeText={setPincode}
+        keyboardType="numeric"
+      />
+      <Text style={styles.label}>Phone:</Text>
+      <TextInput
+        style={styles.input}
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+      />
+      <Text style={styles.label}>Qualifications:</Text>
+      <TextInput
+        style={styles.input}
+        value={qualifications}
+        onChangeText={setQualifications}
+      />
+      <Text style={styles.label}>Skills:</Text>
+      <TextInput
+        style={styles.input}
+        value={skills}
+        onChangeText={setSkills}
+      />
+      <Text style={styles.label}>ID Options:</Text>
+      <TextInput
+        style={styles.input}
+        value={idOptions}
+        onChangeText={setIdOptions}
+      />
+      <Pressable style={styles.button} onPress={saveProfile}>
+        <Text style={styles.buttonText}>Save Profile</Text>
+      </Pressable>
+      <Pressable style={styles.button} onPress={() => navigation.navigate('Home')}>
+        <Text style={styles.buttonText}>Back to Home</Text>
+      </Pressable>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F0F0F0',
@@ -148,42 +138,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  inputContainer: {
-    width: '100%',
-  },
   label: {
-    fontWeight: 'bold',
+    fontSize: 18,
     marginBottom: 5,
   },
   input: {
     width: '100%',
     height: 40,
+    borderColor: '#ccc',
     borderWidth: 1,
-    borderColor: '#CCCCCC',
-    borderRadius: 10,
+    borderRadius: 5,
     paddingHorizontal: 10,
     marginBottom: 10,
+    backgroundColor: 'white',
   },
   button: {
-    width: '100%',
-    height: 40,
-    backgroundColor: '#69DCCE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
     marginTop: 20,
+    padding: 10,
+    backgroundColor: '#69DCCE',
+    borderRadius: 5,
+    width: '100%',
+    alignItems: 'center',
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 16,
-  },
-  message: {
-    marginTop: 10,
-    color: 'red',
-  },
-  loadingIndicator: {
-    marginTop: 20,
   },
 });
 

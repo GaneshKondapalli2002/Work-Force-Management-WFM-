@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import axios from 'axios';
@@ -20,8 +21,8 @@ const Registration = () => {
   const handleRegister = async () => {
     try {
       setLoading(true);
-      const response = await axios.post('http://192.168.230.5:5000/api/auth/register', {
-        name,
+      const response = await axios.post('http://192.168.1.34:5000/api/auth/register', {  
+      name,
         email,
         password,
         confirmPassword,

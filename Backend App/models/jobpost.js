@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+
 const jobPostSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   Date: { type: String, required: true },
@@ -11,11 +12,37 @@ const jobPostSchema = new mongoose.Schema({
   Payment: { type: String, required: true },
   TemplateName: { type: String },
   isTemplate: { type: Boolean, default: false },
-  status: { type: String, enum: ['open', 'assigned', 'upcoming', 'checkedIn', 'completed'], default: 'open' },
-  checkedInTime: { type: Date },
-  checkedOutTime: { type: Date },
-signature: { type: String, required: false, },
-  checkoutInput: { type: String }, // Additional input for checkout
+  status: { type: String, enum: ['open', 'assigned', 'upcoming', 'checkedIn', 'completed', 'draft'], default: 'open' },
+  checkInTime: {
+    type: Date,
+    default: null
+  },
+   checkedOutTime: {
+    type: Date,
+    default: null
+  },
+   patientWeight: {
+    type: String,
+    required: false,
+  },
+  temperature: {
+    type: String,
+    required: false,
+  },
+  bloodPressure: {
+    type: String,
+    required: false,
+  },
+ 
+  signature: {
+    type: String,
+    required: false,
+  },
+  checkoutInput: {
+    type: String,
+    required: false,
+  },
+    CRID: { type: String, required: false }
 }, { timestamps: true });
 
 

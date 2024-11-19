@@ -16,7 +16,7 @@ const OTPVerification = () => {
 
   const handleVerifyOTP = async () => {
     try {
-      const response = await axios.post('http://192.168.230.5:5000/api/auth/verify-otp', {
+      const response = await axios.post('http://192.168.1.34:5000/api/auth/verify-otp', {
         email,
         otp,
       });

@@ -25,14 +25,22 @@ const handleLogin = async () => {
 
     // Check if user and role exist before storing
     if (user && user.role) {
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('role', user.role);
-      // await AsyncStorage.setItem('userId', user._id);
-      // Navigate based on user role
-      if (user.role === 'admin') {
-        navigation.navigate('Admin'); // Replace with your admin screen name
+      if (user.id && user.email && user.name) {
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('role', user.role);
+        await AsyncStorage.setItem('userId', user.id);  // Use user.id instead of user._id
+        await AsyncStorage.setItem('userEmail', user.email);
+        await AsyncStorage.setItem('userName', user.name);
+
+        // Navigate based on user role
+        if (user.role === 'admin') {
+          navigation.navigate('Admin'); // Replace with your admin screen name
+        } else {
+          navigation.navigate('Home'); // Replace with your home screen name
+        }
       } else {
-        navigation.navigate('Home'); // Replace with your home screen name
+        console.error('User data is incomplete:', user);
+        setMessage('User data is incomplete. Please try again.');
       }
     } else {
       console.error('User or role not found in login response:', response.data);

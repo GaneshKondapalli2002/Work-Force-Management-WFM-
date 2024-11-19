@@ -27,6 +27,8 @@ const AdminDashboard: React.FC<DashboardProps> = ({ navigation }) => {
   const [openJobs, setOpenJobs] = useState([]);
   const [completedJobs, setCompletedJobs] = useState([]);
   const [upcomingJobs, setUpcomingJobs] = useState([]);
+  const [postedJobs, setPostedJobs] = useState(0);
+  const [missedJobs, setMissedJobs] = useState(0);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,11 +47,14 @@ const AdminDashboard: React.FC<DashboardProps> = ({ navigation }) => {
       const openJobsData = jobPosts.filter((job: any) => job.status === 'open');
       const completedJobsData = jobPosts.filter((job: any) => job.status === 'completed');
       const upcomingJobsData = jobPosts.filter((job: any) => job.status === 'upcoming');
+      const missedJobsData = jobPosts.filter((job: any) => job.status === 'missed');
 
       setOpenJobs(openJobsData);
       setCompletedJobs(completedJobsData);
       setUpcomingJobs(upcomingJobsData);
-    } catch (error:any) {
+      setPostedJobs(jobPosts.length);
+      setMissedJobs(missedJobsData.length);
+    } catch (error: any) {
       console.error('Error fetching job posts:', error.message);
     }
   };
@@ -80,7 +85,7 @@ const AdminDashboard: React.FC<DashboardProps> = ({ navigation }) => {
     try {
       await AsyncStorage.removeItem('token');
       navigation.navigate('Login');
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Error logging out:', error.message);
       Alert.alert('Logout Failed', 'Failed to logout. Please try again.');
     }
@@ -122,12 +127,15 @@ const AdminDashboard: React.FC<DashboardProps> = ({ navigation }) => {
             <FontAwesome name="bars" size={24} color="black" />
           </TouchableOpacity>
         </View>
-
+        <View style={styles.containers}>
+      <Text style={styles.sectionTitle}>My Tasks</Text>
+      <Text style={styles.POSTJOB}>Posted Jobs: {postedJobs}</Text>
+    </View>
         <ScrollView style={styles.scrollContainer}>
           <View style={styles.sectionsContainer}>
             <TouchableOpacity
               style={[styles.section, activeSection === 'open' && styles.activeSection]}
-              onPress={() =>  navigation.navigate('open')}
+              onPress={() => handleSectionPress('open')}
             >
               <Text style={styles.sectionTitle}>Open Jobs</Text>
               <Text>{openJobs.length}</Text>
@@ -135,7 +143,7 @@ const AdminDashboard: React.FC<DashboardProps> = ({ navigation }) => {
 
             <TouchableOpacity
               style={[styles.section, activeSection === 'completed' && styles.activeSection]}
-              onPress={() => navigation.navigate('Completed')}
+              onPress={() => handleSectionPress('completed')}
             >
               <Text style={styles.sectionTitle}>Completed Jobs</Text>
               <Text>{completedJobs.length}</Text>
@@ -147,6 +155,12 @@ const AdminDashboard: React.FC<DashboardProps> = ({ navigation }) => {
             >
               <Text style={styles.sectionTitle}>Upcoming Jobs</Text>
               <Text>{upcomingJobs.length}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.section, activeSection === 'missed' && styles.activeSection]}
+            >
+              <Text style={styles.sectionTitle}>Missed Shifts</Text>
+              <Text>{missedJobs}</Text>
             </TouchableOpacity>
           </View>
 
@@ -203,6 +217,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 40,
   },
+  containers: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 10, // Optional: Adjust padding as needed
+  },
+
   searchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -236,37 +258,45 @@ const styles = StyleSheet.create({
   },
   sectionsContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    marginHorizontal: -10,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    flexBasis: '45%',
+    margin: 10,
+    backgroundColor: '#f0f0f0',
     borderRadius: 10,
-    backgroundColor: '#e0e0e0',
-    width: '30%',
+    padding: 20,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  POSTJOB:{
+    textAlign: 'right',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   activeSection: {
-    backgroundColor: '#b0b0b0',
+    backgroundColor: '#d0d0d0',
   },
   sectionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
   },
   divider: {
     height: 1,
     backgroundColor: '#ccc',
-    marginVertical: 10,
+    marginVertical: 20,
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    paddingHorizontal: 20,
     paddingVertical: 10,
   },
   footerItem: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
   footerIcon: {
     marginBottom: 5,
@@ -276,29 +306,24 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
     backgroundColor: '#fff',
-    paddingTop: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    elevation: 10,
+    padding: 20,
   },
   modalItem: {
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    paddingVertical: 10,
   },
   modalItemText: {
-    fontWeight: 'bold',
+    fontSize: 18,
   },
 });
 
 export default AdminDashboard;
-
 
 
 

@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Create an Axios instance
 const instance: AxiosInstance = axios.create({
-  baseURL: 'http://192.168.230.5:5000/api',
+  baseURL: 'http://192.168.1.34:5000/api',
   timeout: 10000,
 });
 
@@ -67,6 +67,35 @@ export interface UserProfile {
   email: string;
   profile: Profile;
 }
+
+export interface Message {
+  _id: string;
+  sender: string;
+  receiver: string;
+  message: string;
+  timestamp: string;
+}
+
+// Send a message
+export const sendMessage = async (receiverId: string, message: string): Promise<Message> => {
+  try {
+    const response = await instance.post<Message>('/messages', { receiver: receiverId, message });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+// Fetch messages between the current user and another user
+export const fetchMessages = async (receiverId: string): Promise<Message[]> => {
+  try {
+    const response = await instance.get<Message[]>(`/messages/${receiverId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 
 // Fetch all job posts
 export const fetchAllJobPosts = async (): Promise<JobPost[]> => {
@@ -136,6 +165,7 @@ export const saveTemplate = async (template: JobPost): Promise<JobPost> => {
     throw error;
   }
 };
+
 export const fetchNotificationsFromAPI = async (): Promise<any[]> => {
   try {
     const response = await instance.get('/notifications');
@@ -145,4 +175,48 @@ export const fetchNotificationsFromAPI = async (): Promise<any[]> => {
     return [];
   }
 };
+
+
+
+// export const startTranscription = async (jobName: string, audioUrl: string, outputBucket: string) => {
+//   try {
+//     const response = await instance.post('/transcription/start', {
+//       jobName,
+//       audioUrl,
+//       outputBucket,
+//     });
+//     return response.data;
+//   } catch (error: any) {
+//     console.error('Error starting transcription:', error);
+//     throw error;
+//   }
+// };
+
+// export const checkStatus = async (jobName: string) => {
+//   try {
+//     const response = await instance.get(`/transcription/status/${jobName}`);
+//     return response.data;
+//   } catch (error: any) {
+//     console.error('Error checking transcription status:', error);
+//     throw error;
+//   }
+// };
+
+// export const recognizeSpeech = async (audioUri: string): Promise<string> => {
+//   const jobName = `transcriptionJob_${Date.now()}`;
+//   const audioUrl = `s3://myspeechbuckets /${audioUri}`; // Replace with actual S3 URL
+//   const outputBucket = 'myspeechbuckets'; // Replace with actual S3 bucket name
+
+//   await startTranscription(jobName, audioUrl, outputBucket);
+//   await new Promise((resolve) => setTimeout(resolve, 60000)); // Wait for 1 minute before checking status
+
+//   const statusData = await checkStatus(jobName);
+//   if (statusData.status === 'completed') {
+//     const transcriptResponse = await axios.get(statusData.transcriptUri);
+//     return transcriptResponse.data.results.transcripts[0].transcript;
+//   } else {
+//     throw new Error('Transcription job failed or is still in progress');
+//   }
+// };
+
 export default instance;
